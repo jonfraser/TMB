@@ -1,0 +1,280 @@
+﻿@using TrackMyBills.Helpers
+@model IEnumerable<TrackMyBills.Models.BillModel>
+@{
+    ViewBag.Title = "Bill";
+}
+<script type="text/javascript">
+    $(document).ready(function ()
+    {
+        PopulateBillers();
+
+        $("#addbill").click(AddNew);
+
+        $("#newbiller").click(AddNewBiller);
+
+        $(".delete").click(function ()
+        {
+            DeleteBill($(this));
+        });
+
+        $(".paybill").click(function ()
+        {
+            PayBill($(this));
+        });
+
+        $(".collapsable").click(function () { $(this).parent().children("p").toggle(); });
+        $(".collapsable").click();
+
+        $("#due").datepicker(
+        {
+            dateFormat: 'dd-mm-yy'
+        });
+
+        $(".UpdateableBillAmount").click(function ()
+        {
+            HandleAmountClick($(this));
+        });
+
+        $(".UpdateableBillDueDate").click(function ()
+        {
+            HandleDueDateClick($(this));
+        });
+    });
+
+    function HandleDueDateClick(cell)
+    {
+        //take cell contents
+        var currentDueDate = cell.text().trim();
+        //insert into cell a textbox
+        cell.removeClass("UpdateableBillDueDate");
+        cell.html("");
+        cell.append("<input id='inEdit' type='text' value='" + currentDueDate + "' />");
+        $("#inEdit").datepicker(
+            {
+                dateFormat: 'dd-mm-yy',
+                onSelect: function()
+                {
+                    var newDate = $(this).val();
+                    var bill = $(".rowId", $(this).parent().parent()).val();
+                    $.post('@Url.Action("UpdateBillDueDate")', { billId: bill, dueDate: newDate }, function (data) { if (data !== null) { alert(data); } else { /*window.location = window.location;*/ }; });
+                    $(this).parent().append(newDate);
+                    $(this).parent().addClass("UpdateableBillDueDate");
+                    $(this).parent().click(function () { HandleDueDateClick(); });
+                    $(this).remove();
+                }
+            });
+        $("#inEdit").focus();
+//        $("#inEdit").click(function ()
+//        {
+//            var newDate = $(this).val();
+//            var bill = $(".rowId", $(this).parent().parent()).val();
+//            $.post('@Url.Action("UpdateBillDueDate")', { billId: bill, dueDate: newDate }, function (data) { if (data !== null) { alert(data); } else { window.location = window.location; }; });
+//            $(this).parent().append(newDate);
+//            $(this).parent().addClass("UpdateableBillDueDate");
+//            $(this).parent().click(function () { HandleDueDateClick(); });
+//            $(this).remove();
+//        });
+    }
+
+    function HandleAmountClick(cell)
+    {
+        //take cell contents
+        var currentAmount = cell.text().trim().replace('$','');
+        //insert into cell a textbox
+        cell.removeClass("UpdateableBillAmount");
+        cell.html("");
+        cell.append("<input id='inEdit' type='text' value='" + currentAmount + "' />");
+        $("#inEdit").focus();
+        $("#inEdit").blur(function ()
+        {
+            var newAmount = $(this).val();
+            var bill = $(".rowId", $(this).parent().parent()).val();
+            $.post('@Url.Action("UpdateBillAmount")', { billId: bill, amount: newAmount }, function (data) { if (data !== null) { alert(data); }; });
+            $(this).parent().append('$' + newAmount);
+            $(this).parent().addClass("UpdateableBillAmount");
+            $(this).parent().click(function () { HandleAmountClick(); });
+            $(this).remove();
+        });
+    }
+
+    function PopulateBillers()
+    {
+        $.getJSON('@Url.Action("GetBillers")', {}, function (data)
+        {
+            var billersSelect = $("#biller");
+            for (var i = 0; i < data.length; i++)
+            {
+                billersSelect.append("<option id='" + data[i].ID + "'>" + data[i].Name + "</option>");
+            }
+        });
+    }
+
+    function AddNew()
+    {
+        var billerId = null;
+        $("#biller option").each(function ()
+        {
+            if ($(this).attr("selected") === true)
+            {
+                billerId = $(this).attr('id');
+                return;
+            };
+        });
+        var due = $("#due").val();
+        var amt = $("#amt").val();
+        var repeats = $("#repeat").val();
+
+        var model = {
+            Biller: $("#biller").val(),
+            BillerId: billerId,
+            DueDate: due,
+            Amount: amt,
+            Repeats: repeats
+        };
+        $.post('@Url.Action("SaveBill")', model, function (data) { AddNewBill(data, model); });
+    }
+
+    function AddNewBiller()
+    {
+        var billerName = prompt('Enter new biller');
+        $.post('@Url.Action("AddNewBiller")', { billerName: billerName }, function (data) { if (data !== null) { BillerAdded(data, billerName); } });
+    }
+
+    function BillerAdded(billerId, billerName)
+    {
+        if (billerId === null)
+        {
+            alert('Error adding biller.');
+            return;
+        }
+
+        $("#biller").append("<option id='" + billerId + "'>" + billerName + "</option>");
+        $("#biller option[id='" + billerId + "']").attr("selected", "selected");
+    }
+
+    function AddNewBill(data, model)
+    {
+        // data contains the guid of the record
+        var rowTemplate = "<tr><td class='billCell'>{0}<input type='hidden' class='rowId' value='{1}' /></td><td>{2}</td><td>${3}</td><td>No</td><td><a class='delete'>Delete</a></td><td></td></tr>";
+        rowTemplate = rowTemplate.replace("{0}", model.Biller)
+                                 .replace("{1}", data)
+                                 .replace("{2}", model.DueDate)
+                                 .replace("{3}", model.Amount);
+        $("table tbody").append(rowTemplate);
+
+        $("#biller").val("");
+        $("#due").val("");
+        $("#amt").val("");
+        $("#repeat").val("");
+    }
+
+    function DeleteBill(data)
+    {
+        //data is the link that was clicked
+        var billId = data.parent().parent().children("td.billCell").children("input").val();
+
+        if (confirm('Are you sure you want to delete this bill?'))
+        {
+            $.post('@Url.Action("DeleteBill")', { billId: billId }, function () { data.parent().parent().remove(); });
+        }
+    }
+
+    function PayBill(data)
+    {
+        //data is the link that was clicked
+        var billId = data.parent().parent().children("td.billCell").children("input").val();
+
+        $.post('@Url.Action("PayBill")', { billId: billId }, function () { data.parent().html("Yes"); });
+    }
+</script>
+<h2>
+    Bills</h2>
+<fieldset>
+    <legend class="collapsable link">Add a new bill</legend>
+    <p>
+        Biller:
+        <select id="biller">
+        </select>
+        <a id="newbiller">New biller</a>
+    </p>
+    <p>
+        Due:
+        <input type="text" id="due" />
+        @*<a class="link addDays" data-day="7">+7 days</a> <a class="link addDays" data-day="14">+14 days</a>*@
+    </p>
+    <p>
+        Amount:
+        <input type="text" id="amt" />
+    </p>
+    <p>
+        Repeats:
+        <select id="repeat">
+            <option value="">None</option>
+            <option value="W">Weekly</option>
+            <option value="F">Fortnightly</option>
+            <option value="M">Monthly</option>
+            <option value="Q">Quarterly</option>
+            <option value="Y">Yearly</option>
+        </select>
+    </p>
+    <p>
+        <input type="button" id="addbill" value="Add" />
+    </p>
+</fieldset>
+<h3>Next pay date is @((ViewBag.PayPeriods as List<DateTime>)[0].ToString("dd MMM yyyy"))</h3>
+<table>
+    <thead>
+        <tr>
+            <th>
+                Who?
+            </th>
+            <th>
+                When?
+            </th>
+            <th>
+                How much?
+            </th>
+            <th>
+                Paid?
+            </th>
+            <th>
+                Action
+            </th>
+            <th>
+                Due in
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            List<DateTime> x = ViewBag.PayPeriods;
+            <!--<tr class="@Html.GetClassForDaysRemaining((int)item.DueOn.Date.Subtract(DateTime.UtcNow.Date).TotalDays)">-->
+            <tr class="@Html.GetClassForDaysRemaining(item.DueOn.Date, x)">
+                <td class='billCell'>@item.BilledFrom.Name
+                    <input type="hidden" class="rowId" value="@item.ID.ToString()" />
+                </td>
+                <td class="UpdateableBillDueDate">
+                    @item.DueOn.ToString("dd MMM yyyy")
+                </td>
+                <td class="UpdateableBillAmount">
+                    $@item.Amount
+                </td>
+                <td>
+                    @{ if (item.Paid)
+                       { <text>Yes</text> }
+                       else
+                       { <text>No</text> <a class="link paybill">Pay it</a> } }
+                </td>
+                <td>
+                    <a class="delete">Delete</a>
+                </td>
+                <td>@item.DueOn.Date.Subtract(DateTime.UtcNow.Date).TotalDays.ToString() days (@Html.GetPayPeriod(item.DueOn.Date, x))
+                </td>
+            </tr>
+    
+        }
+    </tbody>
+</table>
+
+@Html.ActionLink("View all paid bills", "ViewPaidBills")

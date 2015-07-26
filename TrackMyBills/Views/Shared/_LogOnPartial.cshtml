@@ -1,0 +1,8 @@
+﻿@if((Session["LoggedInUser"] as TrackMyBills.Models.UserSecurityModel) != null) 
+{
+    @: @Html.ActionLink("Log Off", "LogOff", "Account")
+}
+else 
+{
+    @: @Html.ActionLink("Log On", "Login", "Account")
+}

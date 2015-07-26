@@ -1,0 +1,22 @@
+"Before first deployment"			
+			
+"Create actual login page"			"DONE"
+"Change action on login to take mashed password"			"DONE"
+"Add new biller inline"			"DONE"
+"Collapsable add region"			"DONE"
+"Delete bill inline"			"DONE"
+"Add new bill into table"			"DONE"
+"Mark bill as paid inline"			"DONE"
+"Fix date input in add bill"			"DONE"
+"Show only unpaid bills in table"			"DONE"
+"On shortcut login send user to bills page"			"DONE"
+"Show bills due in what pay period (show pay period)"			"DONE"
+			
+			
+"Future"			
+"Style site"			"DONE-ISH"
+"Set chosen homepage for post login"			
+"Ability to show/hide paid/past bills"			
+"Allow customisation of pay date"			
+"Show bills due in next pay period"			
+"Format date on new records added to table"			

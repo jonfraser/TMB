@@ -1,0 +1,34 @@
+﻿@model IEnumerable<TrackMyBills.Models.BillModel>
+@{
+    ViewBag.Title = "Paid Bills";
+}
+
+
+<h2>
+    Bills paid in last 10 periods</h2>
+    
+<table>
+    <thead>
+        <tr>
+            <th>
+                Pay Date
+            </th>
+            <th>
+                Total bill amount for period
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var period in ViewBag.PayPeriodSummary as Dictionary<DateTime, decimal>)
+        {
+            <tr>
+                <td>
+                    @period.Key.ToString("dd MMM yyyy")
+                </td>
+                <td>
+                    $@period.Value.ToString("0.00")
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

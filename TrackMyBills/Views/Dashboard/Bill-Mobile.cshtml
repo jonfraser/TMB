@@ -1,0 +1,99 @@
+﻿@using TrackMyBills.Helpers
+@model Dictionary<int, List<TrackMyBills.Models.BillModel>>
+@{
+    ViewBag.Title = "Bills";
+    this.Layout = "~/Views/Shared/_LayoutMobile.cshtml";
+}
+@*@section Header {
+    @Html.ActionLink("Back", "Index", "Home", null, new { data_icon = "arrow-l", data_rel = "back" })
+    <h1>@ViewBag.Title</h1>
+}*@
+<ul data-role="listview" data-inset="true">
+    <li data-role="list-divider">Bills Due This Period</li>
+    @foreach (var item in Model[0])
+    {
+        <li>
+            @{ if (!item.Paid)
+               { <a class="link paybill">@item.BilledFrom.Name - @item.DueOn.ToString("dd MMM yyyy")
+                           - $@item.Amount</a> } 
+            }
+        </li>
+    }
+</ul>
+
+<ul data-role="listview" data-inset="true">
+    <li data-role="list-divider">Bills Due Next Period</li>
+    @foreach (var item in Model[1])
+    {
+        <li class="swipe">
+            @{ if (!item.Paid)
+               { <a class="link paybill">@item.BilledFrom.Name - @item.DueOn.ToString("dd MMM yyyy")
+                           - $@item.Amount</a> } 
+            }
+        </li>
+    }
+</ul>
+
+<ul data-role="listview" data-inset="true">
+    <li data-role="list-divider">Bills Due In 2 Periods</li>
+    @foreach (var item in Model[2])
+    {
+        <li>
+            @{ if (!item.Paid)
+               { <a class="link paybill">@item.BilledFrom.Name - @item.DueOn.ToString("dd MMM yyyy")
+                           - $@item.Amount</a> } 
+            }
+        </li>
+    }
+</ul>
+
+<ul data-role="listview" data-inset="true">
+    <li data-role="list-divider">Bills Due In 3 Periods</li>
+    @foreach (var item in Model[3])
+    {
+        <li>
+            @{ if (!item.Paid)
+               { <a class="link paybill">@item.BilledFrom.Name - @item.DueOn.ToString("dd MMM yyyy")
+                           - $@item.Amount</a> } 
+            }
+        </li>
+    }
+</ul>
+
+<ul data-role="listview" data-inset="true">
+    <li data-role="list-divider">Bills Due In 4 Periods</li>
+    @foreach (var item in Model[4])
+    {
+        <li>
+            @{ if (!item.Paid)
+               { <a class="link paybill">@item.BilledFrom.Name - @item.DueOn.ToString("dd MMM yyyy")
+                           - $@item.Amount</a> } 
+            }
+        </li>
+    }
+</ul>
+
+<ul data-role="listview" data-inset="true">
+    <li data-role="list-divider">Bills Not Due For A While</li>
+    @foreach (var item in Model[5])
+    {
+        <li>
+            @{ if (!item.Paid)
+               { <a class="link paybill">@item.BilledFrom.Name - @item.DueOn.ToString("dd MMM yyyy")
+                           - $@item.Amount</a> } 
+            }
+        </li>
+    }
+</ul>
+
+<script type="text/javascript">
+
+    $(function () {
+        $('.swipe').bind('swiperight', function (event) {
+            //Action that will occur when the swipe class is swiped
+            alert("Hello");
+        });
+    });
+
+        //$('.paybill').parent().live('tap', function (event) { alert('swipe'); });
+</script>

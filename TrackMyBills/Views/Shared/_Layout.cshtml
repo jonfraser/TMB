@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>@ViewBag.Title</title>
+    <link href="@Url.Content("~/Content/Site.css")" rel="stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/themes/base/jquery-ui.css")" rel="stylesheet" type="text/css" />
+    <script src="@Url.Content("~/Scripts/jquery-1.4.4.min.js")" type="text/javascript"></script>
+    <script src="@Url.Content("~/Scripts/jquery-ui.min.js")" type="text/javascript"></script>
+</head>
+
+<body>
+    <div class="page">
+
+        <div id="header">
+            <div id="title">
+                <img alt="Track My Bills" src="@Url.Content("~/Content/logo.png")" />
+            </div>
+
+            <div id="logindisplay">
+                
+            </div>
+
+            <div id="menucontainer">
+
+                <ul id="menu">
+                    <li>@Html.ActionLink("Dashboard", "Dashboard", "Dashboard")</li>
+                    <li>@Html.ActionLink("Bills", "Bill", "Dashboard")</li>
+                    <li>@Html.ActionLink("Mobile", "BillMobile", "Dashboard")</li>
+                    <li>@Html.ActionLink("Audit Log", "AuditLog", "Dashboard")</li>
+                    <li>@Html.Partial("_LogOnPartial")</li>
+                </ul>
+
+            </div>
+        </div>
+
+        <div id="main">
+            @RenderBody()
+            <div id="footer">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

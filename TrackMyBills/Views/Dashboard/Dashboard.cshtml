@@ -1,0 +1,11 @@
+﻿@{
+    ViewBag.Title = "Dashboard";
+}
+
+<h2>Dashboard</h2>
+
+@using (Html.BeginForm())
+{
+    <input type="hidden" value="@ViewBag.UserKey" id="id" name="id" />
+    <input type="submit" value="View my shortcut login page" />
+}
