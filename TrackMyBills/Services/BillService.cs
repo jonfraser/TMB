@@ -63,7 +63,7 @@ namespace TrackMyBills.Services
 		{
 			using (var ctx = new SqlConnection())
 			{
-				return await ctx.QueryAsync<BillModel>("select * from Bill where not Paid order by DueOn");
+				return await ctx.QueryAsync<BillModel>("select * from BillModels where not Paid order by DueOn");
 			}
 			//return billContext.Bills.Include("BilledFrom").Where(b => !b.Paid).OrderBy(b => b.DueOn).AsEnumerable();
 		}
