@@ -6,6 +6,7 @@ using System.Web.Mvc;
 using TrackMyBills.ActionFilters;
 using TrackMyBills.Services;
 using TrackMyBills.Models;
+using System.Threading.Tasks;
 
 namespace TrackMyBills.Controllers
 {
@@ -61,16 +62,16 @@ namespace TrackMyBills.Controllers
         [CheckLoggedIn]
         public ActionResult Bill()
         {
-            var currentBills = this._billService.GetCurrentBillsByUserKey(UserInfo.UserKey);
+            var currentBills = this._billService.GetCurrentBillsByUserKeyAsync(UserInfo.UserKey);
             IEnumerable<DateTime> nextFivePayDates = this._budgetService.GetNextFivePayPeriods(UserInfo.UserKey);
             ViewBag.PayPeriods = nextFivePayDates.ToList();
             return View("Bill", currentBills);
         }
 
         [CheckLoggedIn]
-        public ActionResult BillMobile()
+        public async Task<ActionResult> BillMobile()
         {
-            var currentBills = this._billService.GetCurrentBillsByUserKey(UserInfo.UserKey);
+            var currentBills = await this._billService.GetCurrentBillsByUserKeyAsync(UserInfo.UserKey);
             var nextFivePayDates = this._budgetService.GetNextFivePayPeriods(UserInfo.UserKey).ToList();
             ViewBag.PayPeriods = nextFivePayDates;
 
@@ -96,9 +97,9 @@ namespace TrackMyBills.Controllers
         }
 
         [CheckLoggedIn]
-        public ActionResult ViewPaidBills()
+        public async Task<ActionResult> ViewPaidBills()
         {
-            var paidBills = this._billService.GetPaidBillsByUserKey(UserInfo.UserKey);
+            var paidBills = await this._billService.GetPaidBillsByUserKeyAsync(UserInfo.UserKey);
             var previousXPayPeriods = this._budgetService.GetPreviousPayPeriods(UserInfo.UserKey, 10).OrderBy(p => p).ToList();
 
             var payPeriods = new Dictionary<DateTime, decimal>();
@@ -113,9 +114,9 @@ namespace TrackMyBills.Controllers
         }
 
         [CheckLoggedIn]
-        public JsonResult SaveBill(BillSaveModel bill)
+        public async Task<JsonResult> SaveBill(BillSaveModel bill)
         {
-            var biller = this._billService.GetBillerById(bill.BillerId);
+            var biller = await this._billService.GetBillerByIdAsync(bill.BillerId);
             var newBill = new BillModel
             {
                 Amount = bill.Amount,
@@ -125,11 +126,11 @@ namespace TrackMyBills.Controllers
                 EnteredOn = DateTime.Now,
                 ID = Guid.NewGuid()
             };
-            var newId = this._billService.Save(newBill);
+            var newId = await this._billService.SaveAsync(newBill);
 
             if (!string.IsNullOrEmpty(bill.Repeats))
             {
-                if (this._billService.GetBillOccurrencesByBillId(newId) == null)
+                if (await this._billService.GetBillOccurrencesByBillIdAsync(newId) == null)
                 {
                     var newBillOccurrence = new BillOccurrence
                     {
@@ -137,7 +138,7 @@ namespace TrackMyBills.Controllers
                         BillerID = biller.ID,
                         Frequency = (int)GetFrequencyFromRepeatCode(bill.Repeats)
                     };
-                    this._billService.SaveBillerOccurrence(newBillOccurrence);
+                    await this._billService.SaveBillerOccurrenceAsync(newBillOccurrence);
                 }
             }
 
@@ -148,13 +149,13 @@ namespace TrackMyBills.Controllers
 
         [HttpPost]
         [CheckLoggedIn]
-        public JsonResult UpdateBillAmount(Guid billId, string amount)
+        public async Task<JsonResult> UpdateBillAmount(Guid billId, string amount)
         {
             try
             {
-                var bill = this._billService.GetBillById(billId);
-                var biller = this._billService.GetBillerById(bill.BillerID);
-                this._billService.UpdateBillAmount(billId, amount);
+                var bill = await this._billService.GetBillByIdAsync(billId);
+                var biller = await this._billService.GetBillerByIdAsync(bill.BillerID);
+                await this._billService.UpdateBillAmountAsync(billId, amount);
                 this._auditService.Audit(string.Format("{0} bill amount updated from {1} to {2}.", biller.Name, bill.Amount, amount), AuditType.BillEdited);
 
                 return Json(null);
@@ -167,14 +168,14 @@ namespace TrackMyBills.Controllers
 
         [HttpPost]
         [CheckLoggedIn]
-        public JsonResult UpdateBillDueDate(Guid billId, DateTime dueDate)
+        public async Task<JsonResult> UpdateBillDueDate(Guid billId, DateTime dueDate)
         {
             try
             {
-                var bill = this._billService.GetBillById(billId);
-                var biller = this._billService.GetBillerById(bill.BillerID);
+                var bill = await this._billService.GetBillByIdAsync(billId);
+                var biller = await this._billService.GetBillerByIdAsync(bill.BillerID);
                 
-                this._billService.UpdateBillDueDate(billId, dueDate);
+                await this._billService.UpdateBillDueDateAsync(billId, dueDate);
 
                 this._auditService.Audit(string.Format("{0} bill due date updated from {1} to {2}.", biller.Name, bill.DueOn.ToString("dd/MM/yyyy"), dueDate.ToString("dd/MM/yyyy")), AuditType.BillEdited);
 
@@ -203,24 +204,24 @@ namespace TrackMyBills.Controllers
         [CheckLoggedIn]
         public JsonResult GetBillers()
         {
-            return Json(this._billService.GetBillers(), JsonRequestBehavior.AllowGet);
+            return Json(this._billService.GetBillersAsync(), JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
         [CheckLoggedIn]
-        public JsonResult AddNewBiller(string billerName)
+        public async Task<JsonResult> AddNewBiller(string billerName)
         {
             if (string.IsNullOrEmpty(billerName))
             {
                 return Json(null);
             }
 
-            if (this._billService.BillerExists(billerName))
+            if (await this._billService.BillerExistsAsync(billerName))
             {
                 return Json(null);
             }
 
-            var billerId = this._billService.SaveBiller(billerName);
+            var billerId = await this._billService.SaveBillerAsync(billerName);
 
             this._auditService.Audit(string.Format("Biller added - {0}.", billerName), AuditType.BillerAdded);
 
@@ -229,25 +230,25 @@ namespace TrackMyBills.Controllers
 
         [HttpPost]
         [CheckLoggedIn]
-        public JsonResult PayBill(Guid billId)
+        public async Task<JsonResult> PayBill(Guid billId)
         {
             if (billId == Guid.Empty)
             {
                 throw new ArgumentNullException("billId");
             }
 
-            this._billService.PayBill(billId);
+            await this._billService.PayBillAsync(billId);
 
-            var oldBill = this._billService.GetBillById(billId);
-            var biller = this._billService.GetBillerById(oldBill.BillerID);
+            var oldBill = await this._billService.GetBillByIdAsync(billId);
+            var biller = await this._billService.GetBillerByIdAsync(oldBill.BillerID);
             this._auditService.Audit(string.Format("{0} bill owing {1} due on {2} was paid.", biller.Name, oldBill.Amount, oldBill.DueOn.ToString("dd/MM/yyyy")), AuditType.BillPaid);
 
-            BillOccurrence repeats = this._billService.GetBillOccurrencesByBillId(billId);
+            BillOccurrence repeats = await this._billService.GetBillOccurrencesByBillIdAsync(billId);
 
             if (repeats != null && repeats.Frequency.HasValue)
             {
                 
-                this._billService.Save(new BillModel
+                await this._billService.SaveAsync(new BillModel
                 {
                     ID = Guid.NewGuid(),
                     EnteredOn = DateTime.UtcNow,
@@ -277,17 +278,17 @@ namespace TrackMyBills.Controllers
 
         [HttpPost]
         [CheckLoggedIn]
-        public JsonResult DeleteBill(Guid billId)
+        public async Task<JsonResult> DeleteBill(Guid billId)
         {
             if (billId == Guid.Empty)
             {
                 throw new ArgumentNullException("billId");
             }
 
-            this._billService.DeleteBill(billId);
+            await this._billService.DeleteBillAsync(billId);
 
-            var oldBill = this._billService.GetBillById(billId);
-            var biller = this._billService.GetBillerById(oldBill.BillerID);
+            var oldBill = await this._billService.GetBillByIdAsync(billId);
+            var biller = await this._billService.GetBillerByIdAsync(oldBill.BillerID);
             this._auditService.Audit(string.Format("{0} bill owing {1} due on {2} was deleted.", biller.Name, oldBill.Amount, oldBill.DueOn.ToString("dd/MM/yyyy")), AuditType.BillPaid);
 
             return Json(true);

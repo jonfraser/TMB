@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 using TrackMyBills.Models;
 
@@ -8,32 +9,32 @@ namespace TrackMyBills.Services
 {
     public interface IBillService
     {
-        Guid Save(BillModel bill);
+        Task<Guid> SaveAsync(BillModel bill);
 
-        IEnumerable<BillModel> GetCurrentBillsByUserKey(string userKey);
+        Task<IEnumerable<BillModel>> GetCurrentBillsByUserKeyAsync(string userKey);
 
-        IEnumerable<Biller> GetBillers();
+        Task<IEnumerable<Biller>> GetBillersAsync();
 
-        Biller GetBillerById(Guid billerId);
+        Task<Biller> GetBillerByIdAsync(Guid billerId);
 
-        bool BillerExists(string billerName);
+        Task<bool> BillerExistsAsync(string billerName);
 
-        Guid SaveBiller(string billerName);
+        Task<Guid> SaveBillerAsync(string billerName);
 
-        void PayBill(Guid billId);
+        Task<dynamic> PayBillAsync(Guid billId);
 
-        void DeleteBill(Guid billId);
+        Task<dynamic> DeleteBillAsync(Guid billId);
 
-        void SaveBillerOccurrence(BillOccurrence newBillOccurrence);
+		Task<dynamic> SaveBillerOccurrenceAsync(BillOccurrence newBillOccurrence);
 
-        BillOccurrence GetBillOccurrencesByBillId(Guid billId);
+        Task<BillOccurrence> GetBillOccurrencesByBillIdAsync(Guid billId);
 
-        BillModel GetBillById(Guid billId);
+        Task<BillModel> GetBillByIdAsync(Guid billId);
 
-        void UpdateBillAmount(Guid billId, string amount);
+		Task<dynamic> UpdateBillAmountAsync(Guid billId, string amount);
 
-        void UpdateBillDueDate(Guid billId, DateTime dueDate);
+		Task<dynamic> UpdateBillDueDateAsync(Guid billId, DateTime dueDate);
 
-        IEnumerable<BillModel> GetPaidBillsByUserKey(string userKey);
+        Task<IEnumerable<BillModel>> GetPaidBillsByUserKeyAsync(string userKey);
     }
 }

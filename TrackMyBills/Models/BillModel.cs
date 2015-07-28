@@ -50,12 +50,12 @@ namespace TrackMyBills.Models
         Yearly = 6
     }
 
-    public class BillContext : DbContext
-    {
-        public DbSet<BillModel> Bills { get; set; }
-        public DbSet<Biller> Billers { get; set; }
-        public DbSet<BillOccurrence> BillOccurrences { get; set; }
-        public DbSet<Audit> Audits { get; set; }
-    }
+	//public class BillContext : DbContext
+	//{
+	//	public DbSet<BillModel> Bills { get; set; }
+	//	public DbSet<Biller> Billers { get; set; }
+	//	public DbSet<BillOccurrence> BillOccurrences { get; set; }
+	//	public DbSet<Audit> Audits { get; set; }
+	//}
 
 }

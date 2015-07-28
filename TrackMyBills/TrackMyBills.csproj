@@ -51,6 +51,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dapper">
+      <HintPath>..\packages\Dapper.1.42\lib\net45\Dapper.dll</HintPath>
+    </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
@@ -119,7 +122,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ActionFilters\CheckLoggedInActionFilter.cs" />
-    <Compile Include="AppStart_SQLCEEntityFramework.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\ControllerBase.cs" />
     <Compile Include="Controllers\DashboardController.cs" />
@@ -144,7 +146,6 @@
     <Compile Include="Services\IBudgetService.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App_Data\TrackMyBills.Models.BillContext.sdf" />
     <Content Include="Content\logo.png" />
     <Content Include="Content\themes\base\images\ui-bg_flat_0_aaaaaa_40x100.png" />
     <Content Include="Content\themes\base\images\ui-bg_flat_75_ffffff_40x100.png" />
@@ -244,6 +245,9 @@
     <Content Include="Views\Shared\_LayoutMobile.cshtml" />
     <Content Include="Views\Dashboard\AuditLog.cshtml" />
     <None Include="_bin_deployableAssemblies\amd64\Microsoft.VC90.CRT\Microsoft.VC90.CRT.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Data\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

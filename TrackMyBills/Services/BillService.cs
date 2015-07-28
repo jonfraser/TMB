@@ -1,124 +1,154 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using TrackMyBills.Models;
+using Dapper;
+using System.Threading.Tasks;
 
 namespace TrackMyBills.Services
 {
-    public class BillService : IBillService
-    {
-        public Guid Save(Models.BillModel bill)
-        {
-            var billContext = new BillContext();
-            billContext.Bills.Add(bill);
-            billContext.SaveChanges();
-            return bill.ID;   
-        }
+	public class BillService : IBillService
+	{
+		public async Task<Guid> SaveAsync(Models.BillModel bill)
+		{
+			using (var billContext = new SqlConnection(""))
+			{
+				var newBillId = await billContext.ExecuteScalarAsync<Guid>(
+					"insert into Bill select @BillerID, @DueOn, @Amount, @Paid, @EnteredOn; select @@IDENTITY",
+					new
+					{
+						BillerID = bill.BillerID,
+						DueOn = bill.DueOn,
+						Amount = bill.Amount,
+						Paid = bill.Paid,
+						EnteredOn = bill.EnteredOn
+					});
 
-        public void UpdateBillAmount(Guid billId, string amount)
-        {
-            using (var ctx = new BillContext())
-            {
-                var thisBill = ctx.Bills.FirstOrDefault(b => b.ID == billId);
-                if (thisBill != null)
-                {
-                    thisBill.Amount = amount;
-                    ctx.SaveChanges();
-                }
-            }
-        }
+				return newBillId;
+			}
+		}
 
-        public void UpdateBillDueDate(Guid billId, DateTime dueDate)
-        {
-            using (var ctx = new BillContext())
-            {
-                var thisBill = ctx.Bills.FirstOrDefault(b => b.ID == billId);
-                if (thisBill != null)
-                {
-                    thisBill.DueOn = dueDate;
-                    ctx.SaveChanges();
-                }
-            }
-        }
+		public async Task<dynamic> UpdateBillAmountAsync(Guid billId, string amount)
+		{
+			using (var ctx = new SqlConnection())
+			{
+				await ctx.QueryAsync("update Bill set Amount = @Amount where ID = @BillID",
+					new
+					{
+						Amount = amount,
+						BillID = billId
+					});
+			}
+			return null;
+		}
 
-        public IEnumerable<Models.BillModel> GetCurrentBillsByUserKey(string userKey)
-        {
-            var billContext = new BillContext();
-            return billContext.Bills.Include("BilledFrom").Where(b=>!b.Paid).OrderBy(b=>b.DueOn).AsEnumerable();
-        }
+		public async Task<dynamic> UpdateBillDueDateAsync(Guid billId, DateTime dueDate)
+		{
+			using (var ctx = new SqlConnection())
+			{
+				await ctx.QueryAsync("update Bill set DueOn = @DueOn where ID = @BillID",
+					new
+					{
+						DueOn = dueDate,
+						BillID = billId
+					});
 
-        public IEnumerable<Biller> GetBillers()
-        {
-            var billContext = new BillContext();
-            return billContext.Billers.AsEnumerable();
-        }
+			}
+			return null;
+		}
 
-        public Biller GetBillerById(Guid billerId)
-        {
-            var billContext = new BillContext();
-            return billContext.Billers.FirstOrDefault(b => b.ID == billerId);
-        }
+		public async Task<IEnumerable<Models.BillModel>> GetCurrentBillsByUserKeyAsync(string userKey)
+		{
+			using (var ctx = new SqlConnection())
+			{
+				return await ctx.QueryAsync<BillModel>("select * from Bill where not Paid order by DueOn");
+			}
+			//return billContext.Bills.Include("BilledFrom").Where(b => !b.Paid).OrderBy(b => b.DueOn).AsEnumerable();
+		}
 
-        public bool BillerExists(string billerName)
-        {
-            var billContext = new BillContext();
-            return billContext.Billers.Any(b=>b.Name == billerName);
-        }
+		public async Task<IEnumerable<Biller>> GetBillersAsync()
+		{
+			return null;
+			//var billContext = new BillContext();
+			//return billContext.Billers.AsEnumerable();
+		}
 
-        public Guid SaveBiller(string billerName)
-        {
-            var billerId = Guid.NewGuid();
-            var billContext = new BillContext();
-            billContext.Billers.Add(new Biller { ID = billerId, Name = billerName });
-            billContext.SaveChanges();
-            return billerId;   
-        }
+		public async Task<Biller> GetBillerByIdAsync(Guid billerId)
+		{
+			return null;
+			//var billContext = new BillContext();
+			//return billContext.Billers.FirstOrDefault(b => b.ID == billerId);
+		}
 
-        public void PayBill(Guid billId)
-        {
-            var billContext = new BillContext();
-            var thisBill = billContext.Bills.FirstOrDefault(b => b.ID == billId);
+		public async Task<bool> BillerExistsAsync(string billerName)
+		{
+			return true;
+			//var billContext = new BillContext();
+			//return billContext.Billers.Any(b => b.Name == billerName);
+		}
 
-            thisBill.Paid = true;
+		public async Task<Guid> SaveBillerAsync(string billerName)
+		{
+			return Guid.Empty;
+			//var billerId = Guid.NewGuid();
+			//var billContext = new BillContext();
+			//billContext.Billers.Add(new Biller { ID = billerId, Name = billerName });
+			//billContext.SaveChanges();
+			//return billerId;
+		}
 
-            billContext.SaveChanges();
-        }
+		public async Task<dynamic> PayBillAsync(Guid billId)
+		{
+			return true;
+			//var billContext = new BillContext();
+			//var thisBill = billContext.Bills.FirstOrDefault(b => b.ID == billId);
 
-        public void DeleteBill(Guid billId)
-        {
-            var billContext = new BillContext();
-            var thisBill = billContext.Bills.FirstOrDefault(b => b.ID == billId);
+			//thisBill.Paid = true;
 
-            billContext.Bills.Remove(thisBill);
+			//billContext.SaveChanges();
+		}
 
-            billContext.SaveChanges();
-        }
+		public async Task<dynamic> DeleteBillAsync(Guid billId)
+		{
+			return null;
+			//var billContext = new BillContext();
+			//var thisBill = billContext.Bills.FirstOrDefault(b => b.ID == billId);
 
-        public void SaveBillerOccurrence(BillOccurrence occurrence)
-        {
-            var billContext = new BillContext();
-            billContext.BillOccurrences.Add(occurrence);
-            billContext.SaveChanges();
-        }
-        
-        public BillOccurrence GetBillOccurrencesByBillId(Guid billId)
-        {
-            var bill = GetBillById( billId);
-            var billContext = new BillContext();
-            return billContext.BillOccurrences.FirstOrDefault(b => b.BillerID == bill.BillerID);
-        }
+			//billContext.Bills.Remove(thisBill);
 
-        public BillModel GetBillById(Guid billId)
-        {
-            var billContext = new BillContext();
-            return billContext.Bills.FirstOrDefault(b => b.ID == billId);
-        }
-        
-        public IEnumerable<BillModel> GetPaidBillsByUserKey(string userKey)
-        {
-            var billContext = new BillContext();
-            return billContext.Bills.Include("BilledFrom").Where(b => b.Paid).OrderBy(b => b.DueOn).AsEnumerable();
-        }
-    }
+			//billContext.SaveChanges();
+		}
+
+		public async Task<dynamic> SaveBillerOccurrenceAsync(BillOccurrence occurrence)
+		{
+			return null;
+			//var billContext = new BillContext();
+			//billContext.BillOccurrences.Add(occurrence);
+			//billContext.SaveChanges();
+		}
+
+		public async Task<BillOccurrence> GetBillOccurrencesByBillIdAsync(Guid billId)
+		{
+			return null;
+			//var bill = GetBillByIdAsync(billId);
+			//var billContext = new BillContext();
+			//return billContext.BillOccurrences.FirstOrDefault(b => b.BillerID == bill.BillerID);
+		}
+
+		public async Task<BillModel> GetBillByIdAsync(Guid billId)
+		{
+			return null;
+			//var billContext = new BillContext();
+			//return billContext.Bills.FirstOrDefault(b => b.ID == billId);
+		}
+
+		public async Task<IEnumerable<BillModel>> GetPaidBillsByUserKeyAsync(string userKey)
+		{
+			return null;
+			//var billContext = new BillContext();
+			//return billContext.Bills.Include("BilledFrom").Where(b => b.Paid).OrderBy(b => b.DueOn).AsEnumerable();
+		}
+	}
 }
