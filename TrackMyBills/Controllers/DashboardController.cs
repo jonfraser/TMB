@@ -60,9 +60,9 @@ namespace TrackMyBills.Controllers
         }
 
         [CheckLoggedIn]
-        public ActionResult Bill()
+        public async Task< ActionResult> Bill()
         {
-            var currentBills = this._billService.GetCurrentBillsByUserKeyAsync(UserInfo.UserKey);
+            var currentBills = await  this._billService.GetCurrentBillsByUserKeyAsync(UserInfo.UserKey);
             IEnumerable<DateTime> nextFivePayDates = this._budgetService.GetNextFivePayPeriods(UserInfo.UserKey);
             ViewBag.PayPeriods = nextFivePayDates.ToList();
             return View("Bill", currentBills);
@@ -202,9 +202,10 @@ namespace TrackMyBills.Controllers
 
         [HttpGet]
         [CheckLoggedIn]
-        public JsonResult GetBillers()
+        public async Task<JsonResult> GetBillers()
         {
-            return Json(this._billService.GetBillersAsync(), JsonRequestBehavior.AllowGet);
+            var billers = await this._billService.GetBillersAsync();
+            return Json(billers, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]
@@ -284,10 +285,10 @@ namespace TrackMyBills.Controllers
             {
                 throw new ArgumentNullException("billId");
             }
+            var oldBill = await this._billService.GetBillByIdAsync(billId);
 
             await this._billService.DeleteBillAsync(billId);
 
-            var oldBill = await this._billService.GetBillByIdAsync(billId);
             var biller = await this._billService.GetBillerByIdAsync(oldBill.BillerID);
             this._auditService.Audit(string.Format("{0} bill owing {1} due on {2} was deleted.", biller.Name, oldBill.Amount, oldBill.DueOn.ToString("dd/MM/yyyy")), AuditType.BillPaid);
 

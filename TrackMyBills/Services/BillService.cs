@@ -16,10 +16,12 @@ namespace TrackMyBills.Services
 		{
 			using (var billContext = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				var newBillId = await billContext.ExecuteScalarAsync<Guid>(
-					"insert into Bill select @BillerID, @DueOn, @Amount, @Paid, @EnteredOn; select @@IDENTITY",
+                var newBillId = Guid.NewGuid();
+				await billContext.ExecuteAsync(
+					"insert into BillModels select @BillID, @BillerID, @DueOn, @Amount, @Paid, @EnteredOn",
 					new
 					{
+                        BillID = newBillId,
 						BillerID = bill.BillerID,
 						DueOn = bill.DueOn,
 						Amount = bill.Amount,
@@ -35,7 +37,7 @@ namespace TrackMyBills.Services
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				await ctx.QueryAsync("update Bill set Amount = @Amount where ID = @BillID",
+				await ctx.ExecuteAsync("update BillModels set Amount = @Amount where ID = @BillID",
 					new
 					{
 						Amount = amount,
@@ -49,7 +51,7 @@ namespace TrackMyBills.Services
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				await ctx.QueryAsync("update Bill set DueOn = @DueOn where ID = @BillID",
+				await ctx.ExecuteAsync("update BillModels set DueOn = @DueOn where ID = @BillID",
 					new
 					{
 						DueOn = dueDate,
@@ -64,41 +66,40 @@ namespace TrackMyBills.Services
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				return (await ctx.QueryAsync<BillModel>("select * from BillModels where Paid = 0")).OrderBy(b=>b.DueOn);
+				var bills = (await ctx.QueryAsync<BillModel>("select * from BillModels where Paid = 0")).OrderBy(b=>b.DueOn);
+                var mappings = await ctx.QueryAsync<Biller>("select * from Billers");
+                foreach (var bill in bills)
+                {
+                    bill.BilledFrom = mappings.FirstOrDefault(m => m.ID == bill.BillerID);
+                }
+                return bills;
 			}
-			//return billContext.Bills.Include("BilledFrom").Where(b => !b.Paid).OrderBy(b => b.DueOn).AsEnumerable();
 		}
 
 		public async Task<IEnumerable<Biller>> GetBillersAsync()
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				return await ctx.QueryAsync<Biller>("select * from Biller");
+				return await ctx.QueryAsync<Biller>("select * from Billers");
 			}
-			//var billContext = new BillContext();
-			//return billContext.Billers.AsEnumerable();
 		}
 
 		public async Task<Biller> GetBillerByIdAsync(Guid billerId)
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				return (await ctx.QueryAsync<Biller>("select * from Biller where ID = @ID",
+				return (await ctx.QueryAsync<Biller>("select * from Billers where ID = @ID",
 					new { ID = billerId })).FirstOrDefault();
 			}
-			//var billContext = new BillContext();
-			//return billContext.Billers.FirstOrDefault(b => b.ID == billerId);
 		}
 
 		public async Task<bool> BillerExistsAsync(string billerName)
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				return (await ctx.QueryAsync<Biller>("select * from Biller where Name = @Name",
+				return (await ctx.QueryAsync<Biller>("select * from Billers where Name = @Name",
 					new { Name = billerName })).Any();
 			}
-			//var billContext = new BillContext();
-			//return billContext.Billers.Any(b => b.Name == billerName);
 		}
 
 		public async Task<Guid> SaveBillerAsync(string billerName)
@@ -107,7 +108,7 @@ namespace TrackMyBills.Services
 			using (var billContext = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
 				var newBillerId = await billContext.ExecuteScalarAsync<Guid>(
-					"insert into Biller select @BillerID, @BillerName; select @@IDENTITY",
+					"insert into Billers select @BillerID, @BillerName",
 					new
 					{
 						BillerID = billerId,
@@ -116,51 +117,34 @@ namespace TrackMyBills.Services
 
 				return billerId;
 			}
-			//var billerId = Guid.NewGuid();
-			//var billContext = new BillContext();
-			//billContext.Billers.Add(new Biller { ID = billerId, Name = billerName });
-			//billContext.SaveChanges();
-			//return billerId;
 		}
 
 		public async Task<dynamic> PayBillAsync(Guid billId)
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				await ctx.QueryAsync("update Bill set Paid = 1 where ID = @BillID",
+				await ctx.ExecuteAsync("update BillModels set Paid = 1 where ID = @BillID",
 					new
 					{
-						ID = billId
+						BillID = billId
 					});
 
 			}
 			return true;
-			//var billContext = new BillContext();
-			//var thisBill = billContext.Bills.FirstOrDefault(b => b.ID == billId);
-
-			//thisBill.Paid = true;
-
-			//billContext.SaveChanges();
 		}
 
 		public async Task<dynamic> DeleteBillAsync(Guid billId)
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				await ctx.QueryAsync("delete from Bill where ID = @BillID",
+				await ctx.ExecuteAsync("delete from BillModels where ID = @BillID",
 					new
 					{
-						ID = billId
+						BillID = billId
 					});
 
 			}
 			return null;
-			//var billContext = new BillContext();
-			//var thisBill = billContext.Bills.FirstOrDefault(b => b.ID == billId);
-
-			//billContext.Bills.Remove(thisBill);
-
-			//billContext.SaveChanges();
 		}
 
 		public async Task<dynamic> SaveBillerOccurrenceAsync(BillOccurrence occurrence)
@@ -168,7 +152,7 @@ namespace TrackMyBills.Services
 			using (var billContext = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
 				await billContext.ExecuteAsync(
-					"insert into BillOccurrence select @ID, @BillerID, @DayOfMonthDue, @DayOfWeekDue, @Frequency",
+                    "insert into BillOccurrences select @ID, @DayOfWeekDue, @DayOfMonthDue, @BillerID, @Frequency",
 					new
 					{
 						ID = occurrence.ID,
@@ -180,9 +164,6 @@ namespace TrackMyBills.Services
 
 			}
 			return null;
-			//var billContext = new BillContext();
-			//billContext.BillOccurrences.Add(occurrence);
-			//billContext.SaveChanges();
 		}
 
 		public async Task<BillOccurrence> GetBillOccurrencesByBillIdAsync(Guid billId)
@@ -190,29 +171,32 @@ namespace TrackMyBills.Services
 			var bill = await GetBillByIdAsync(billId);
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				return (await ctx.QueryAsync<BillOccurrence>("select * from BillOccurrence where BillerID = @BillerID",
+				return (await ctx.QueryAsync<BillOccurrence>("select * from BillOccurrences where BillerID = @BillerID",
 					new { BillerID = bill.BillerID })).FirstOrDefault();
 			}
-			//var billContext = new BillContext();
-			//return billContext.BillOccurrences.FirstOrDefault(b => b.BillerID == bill.BillerID);
 		}
 
 		public async Task<BillModel> GetBillByIdAsync(Guid billId)
 		{
 			using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
 			{
-				return (await ctx.QueryAsync<BillModel>("select * from BillModel where ID = @ID",
+				return (await ctx.QueryAsync<BillModel>("select * from BillModels where ID = @ID",
 					new { ID = billId })).FirstOrDefault();
 			}
-			//var billContext = new BillContext();
-			//return billContext.Bills.FirstOrDefault(b => b.ID == billId);
 		}
 
 		public async Task<IEnumerable<BillModel>> GetPaidBillsByUserKeyAsync(string userKey)
 		{
-			return null;
-			//var billContext = new BillContext();
-			//return billContext.Bills.Include("BilledFrom").Where(b => b.Paid).OrderBy(b => b.DueOn).AsEnumerable();
-		}
+            using (var ctx = new SqlConnection(ConfigurationManager.ConnectionStrings["TMB"].ConnectionString))
+            {
+                var bills = (await ctx.QueryAsync<BillModel>("select * from BillModels where Paid = 1")).OrderBy(b => b.DueOn);
+                var mappings = await ctx.QueryAsync<Biller>("select * from Billers");
+                foreach (var bill in bills)
+                {
+                    bill.BilledFrom = mappings.FirstOrDefault(m => m.ID == bill.BillerID);
+                }
+                return bills;
+            }
+        }
 	}
 }
